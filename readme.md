@@ -1,7 +1,7 @@
 # Introduction
+Welcome! In this tutorial, we are going to learn about random number generation and Working with it
 - Randomness is a core functionality for many applications
 - Games, trait-based NFTs, and luck-based financial applications rely heavily on randomness
-Welcome! In this tutorial, we are going to learn about random number generation and Working with it
 ---
 # Pre requisites
 - To understand and utilize this tutorial you need to have the understanding of:
@@ -61,7 +61,7 @@ Welcome! In this tutorial, we are going to learn about random number generation 
 - We are going to use remix IDE and metamask to deploy the contract to the Celo alfajores network
 ---
 # Conclusion
-- Congratulations, you have learned another new implementation in the Web3 world
+- Congratulations! , you have learned another new implementation in the Web3 world
 - In this tutorial, we have learned a reliable way  to generate random numbers
 ---
 # What's next
