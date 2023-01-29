@@ -84,10 +84,34 @@ Welcome! In this tutorial, we are going to learn about random number generation 
 	- Fetch Random Number
 ---
 - Now as we have a rough idea about the functions, let's start the coding process
+```
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+import "witnet-solidity-bridge/contracts/interfaces/IWitnetRandomness.sol";
+
+contract Lottery {
+    address witnetAddress = 0xbD804467270bCD832b4948242453CA66972860F5;
+    IWitnetRandomness public witnet = IWitnetRandomness(witnetAddress);
+```
 - As usual, we write the license and the pragma solidity version
 - We import the interface for the randomness contract
 - We set the address of the randomness contract in Celo alfajores and create the instance of the interface.
 ---
+```
+    uint32 public randomness;
+    uint256 entryAmount;
+    uint256 lastWinnerAmount;
+    uint256 public lotteryId;
+    uint256 public latestRandomizingBlock;
+
+    address payable lastWinner;
+    address[] players;
+    address owner;
+
+    bool open;
+```
 - Let's look at all the variables we will be going through
 - Firstly we have the random number itself, it is in uint32 because the randomness contract returns us a uint32
 - Then we have the `entryAmount` so that the players can know the amount
@@ -99,6 +123,25 @@ Welcome! In this tutorial, we are going to learn about random number generation 
 	- And finally an array of to track all the participants of the lottery
 - Finally, we have a bool which shows if there is a current active lottery
 ---
+```
+    constructor () {
+        owner = msg.sender;
+    } 
+  
+    modifier onlyIfOpen{
+        require(open, "Not Open");
+        _;
+    }
+
+    modifier onlyOwner{
+        require(msg.sender == owner, "not owner");
+        _;
+    }
+
+    event Started(uint lotteryId, uint entryAmount);
+    event Ended(uint lotteryId, uint winningAmount, address winner);
+    error reEntry();
+```
 - We have a simple constructor where we set the creator of the contract as the owner
 - We have specified two modifiers to control access
 	- Firstly we have the `onlyOwner` modifier which allows only the owner to perform certain functionality
@@ -108,6 +151,19 @@ Welcome! In this tutorial, we are going to learn about random number generation 
 	- `Ended` event logs the ID, the address of the winner, and the winner's amount
 - We have also defined the custom error `reEntry` for users who try to enter the lottery more than one time
 ---
+```
+    function start(uint32 _entryAmount) external onlyOwner{
+        //Check if there is a current active lottery
+        require(!open, "running");
+        open = true;
+        entryAmount = _entryAmount * 1 ether;
+
+        // Deleting the previous arrays of players
+        delete players;
+        emit Started(lotteryId, _entryAmount);
+        lotteryId++;
+    }
+```
 - First, we have the start function which can be called by the owner
 - We have a require statement to prevent starting a new lottery when there is one currently active
 - The function takes the entry amount and multiplies it to 1 ether unit to convert it to 1 celo
@@ -118,6 +174,19 @@ Welcome! In this tutorial, we are going to learn about random number generation 
 	- Then we update the `lotteryId`
 - We also emit the `Started` event with the Id and the amount
 ---
+```
+    function join() external payable onlyIfOpen{
+        require(msg.value == entryAmount, "Insufficient Funds");
+
+        //Check if user is already a player
+        for(uint i=0; i < players.length; i++){
+            if (msg.sender == players[i]){
+                revert reEntry();
+            }
+        }
+        players.push(msg.sender);
+    }
+```
 - Then we have the join function which is payable and can only be accessed if there is an active lottery(`onlyIfOpen`)
 - First, we have a require statement to check if the user has sent the right amount
 - Then we perform a check to see if the user is already entered in the lottery
@@ -125,12 +194,46 @@ Welcome! In this tutorial, we are going to learn about random number generation 
 - If the caller is already in the array, then the function call is reverted by the custom error
 - If not, the player is added to the array
 ---
+```
+    function requestRandomness() external onlyOwner onlyIfOpen{
+        latestRandomizingBlock = block.number;
+
+        //Setting the fee to 1 celo
+        uint feeValue = 1 ether;
+
+        // Requesting the random number with a fee and receiving back the surplus
+        uint _usedFunds = witnet.randomize{ value: feeValue }();
+        if (_usedFunds < feeValue) {
+            payable(address(this)).transfer(feeValue - _usedFunds);
+        }
+    }
+```
 - Next is the `requestRandomess` function which is a slightly modified version of the one from Witnet
 - Instead of sending the funds from the caller,  we are going to use the funds already present in the contract to call the randomize function
 - First, we set the block number
 - Then we have a fee value which is set to 1 Celo as the fee is less than 1 Celo and we receive back the amount which was not utilized
 - Then we call the randomize function and finally receive back the unused fee amount
 ---
+```
+    function pickWinner() external onlyOwner onlyIfOpen{
+        assert(latestRandomizingBlock > 0);
+        open = false;
+        latestRandomizingBlock = 0;
+
+        uint32 range = uint32(players.length);
+        uint winnerIndex = witnet.random(range, 0, latestRandomizingBlock);
+
+        lastWinner = payable(players[winnerIndex]);
+        lastWinnerAmount = address(this).balance;
+
+        (bool sent,) = lastWinner.call{value: lastWinnerAmount}("");
+        require(sent, "Failed to send reward");
+
+        emit Ended(lotteryId, lastWinnerAmount, lastWinner);
+    }
+
+    receive () external payable {}
+```
 - Finally, we have the `pickWinner` function which is going to end the lottery
 - This function includes the fetching of the random number that has been generated
 - This function must be called only after 5 - 10 minutes after the `requestRandomness` function to allow it to generate the random number
@@ -147,6 +250,7 @@ Welcome! In this tutorial, we are going to learn about random number generation 
 - We update the global variables of the last winner's address and the winner's amount
 - We use `call` to transfer the fund
 - Finally, we emit the `Ended` event to log the information of the lottery Id, winner amount, and the winner's address
+- As our contract is handling funds, we implement a receive function
 ---
 ## Testing the contract
 - Finally we are done coding the contract
