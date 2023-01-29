@@ -1,7 +1,7 @@
 # Introduction
-Welcome! In this tutorial, we are going to learn about random number generation and Working with it
 - Randomness is a core functionality for many applications
 - Games, trait-based NFTs, and luck-based financial applications rely heavily on randomness
+Welcome! In this tutorial, we are going to learn about random number generation and Working with it
 ---
 # Pre requisites
 - To understand and utilize this tutorial you need to have the understanding of:
@@ -12,6 +12,7 @@ Welcome! In this tutorial, we are going to learn about random number generation 
 # Requirements
 - Node Js
 - Metamask
+- Celo Alfajores testnet
 ---
 # Let's Get started!
 - We will be covering
@@ -45,7 +46,7 @@ Welcome! In this tutorial, we are going to learn about random number generation 
 - Every oracle has a different way of generating the randomness
 - We are going to learn how to generate a random number using Witnet
 ---
-## Witnet
+## Witnet Oracle
 - Witnet is a multichain oracle that gives smart contract access to real-world information
 - It is one of the oracles that are available in the cell network
 - Witnet provides us with a contract using which we can call and obtain randomness
@@ -53,26 +54,115 @@ Welcome! In this tutorial, we are going to learn about random number generation 
 - It is called crowd-witnessing
 - To learn more about randomness in witnet - https://docs.witnet.io/smart-contracts/witnet-randomness-oracle
 ## Using Randomness from witnet
-- Breakdown of the contract example from witnet
-- Both in the form of a Tutorial and a video explanation
+- Before starting to code our lottery contract, let's understand the randomness functions provided by Witnet
+- You can find the code and their explanation here - https://docs.witnet.io/smart-contracts/witnet-randomness-oracle/code-examples
+- Firstly we import the interface of the witnessRandomness contract
+- The functionality is divided into two steps to be secure
+- There is a request function and a fetch function
+- First, we request a random number by paying a small fee
+- it takes in the current block number and begins the process to generate a random number
+- It takes around 5 to 10 minutes to generate the random number
+- After 5 - 10 minutes, we can call the fetch function to obtain the random number
+- This number is generated earlier and it is fetched into the contract whenever you call the fetch function
+## Setup
+- Create a new directory in your favorite code editor, name it Lottery
+- Firstly we need to download the npm package of witnet to access the interface of the randomness contract
+- Download it through this command
+	- `npm I witnet-solidity-bridge`
+- Now create a new solidity file called Lottery.sol
 ## Building the contract
-- Includes the coding tutorial and a code explanation video
+- If you're curious, the entire code for the contract can be viewed in - 
+- Before starting to code a project, we must have an outline of all the functionality that will be in the contract
+- This contract will behave like a traditional lottery where there is an owner who will start and end the lottery
+- There will be people who will join the lottery by paying the lottery amount
+- So the major functionality would be
+	- Start lottery -> Only Owner
+	- Join the lottery
+	- End lottery(picking and awarding the winner) -> Only Owner
+- In our case, we are going to incorporate the two-step random number generation from Witnet
+	- Generate a Random number
+	- Fetch Random Number
+---
+- Now as we have a rough idea about the functions, let's start the coding process
+- As usual, we write the license and the pragma solidity version
+- We import the interface for the randomness contract
+- We set the address of the randomness contract in Celo alfajores and create the instance of the interface.
+---
+- Let's look at all the variables we will be going through
+- Firstly we have the random number itself, it is in uint32 because the randomness contract returns us a uint32
+- Then we have the `entryAmount` so that the players can know the amount
+- To give more information we have the last winner amount and the lottery Id
+- We have the `latestRandomizingBlock` which is the block where we called the randomness function
+- Coming to the address, we have:
+	- Address of the owner of the contract
+	- Address of the last winner(for information)
+	- And finally an array of to track all the participants of the lottery
+- Finally, we have a bool which shows if there is a current active lottery
+---
+- We have a simple constructor where we set the creator of the contract as the owner
+- We have specified two modifiers to control access
+	- Firstly we have the `onlyOwner` modifier which allows only the owner to perform certain functionality
+	- Then we have the `onlyIfOpen` modifier which allows access to certain functions only if there is a current active lottery
+- Then we have two events to log the information about the lottery
+	- `Started` event logs the ID of the event and the amount
+	- `Ended` event logs the ID, the address of the winner, and the winner's amount
+- We have also defined the custom error `reEntry` for users who try to enter the lottery more than one time
+---
+- First, we have the start function which can be called by the owner
+- We have a require statement to prevent starting a new lottery when there is one currently active
+- The function takes the entry amount and multiplies it to 1 ether unit to convert it to 1 celo
+- For example: if the input is 10, then the fee would be 10 celo
+- Then we update the state variables
+	- First, we set open to be true as a new lottery is started
+	- Then we clear the array of players that is left from the previous round
+	- Then we update the `lotteryId`
+- We also emit the `Started` event with the Id and the amount
+---
+- Then we have the join function which is payable and can only be accessed if there is an active lottery(`onlyIfOpen`)
+- First, we have a require statement to check if the user has sent the right amount
+- Then we perform a check to see if the user is already entered in the lottery
+- We have employed a simple for loop which iterated over the `players` array and checks if the caller is already a part of it
+- If the caller is already in the array, then the function call is reverted by the custom error
+- If not, the player is added to the array
+---
+- Next is the `requestRandomess` function which is a slightly modified version of the one from Witnet
+- Instead of sending the funds from the caller,  we are going to use the funds already present in the contract to call the randomize function
+- First, we set the block number
+- Then we have a fee value which is set to 1 Celo as the fee is less than 1 Celo and we receive back the amount which was not utilized
+- Then we call the randomize function and finally receive back the unused fee amount
+---
+- Finally, we have the `pickWinner` function which is going to end the lottery
+- This function includes the fetching of the random number that has been generated
+- This function must be called only after 5 - 10 minutes after the `requestRandomness` function to allow it to generate the random number
+- Calling this function before that will result in reversion
+- First, our function checks if the `requestRandomness` function has been called by checking the `latestRandomizingBlock` variable
+- Then we close the lottery by setting `open` to false
+- We also set the `latestRandomizingBlock` to 0 to prevent calling this function again
+- Before fetching the random number, we are going to specify the range of the random number
+- For our purpose, we have an array of addresses, and we need to select one person from that array
+- So we specify the range to the length of the array
+- Then we call the random function as per the syntax provided by Witnet
+- This will return us the random number which will be the index of the winner
+- As the contract holds all the entry Amounts collected in the lottery, we are going to send the entire balance of the contract to the winner
+- We update the global variables of the last winner's address and the winner's amount
+- We use `call` to transfer the fund
+- Finally, we emit the `Ended` event to log the information of the lottery Id, winner amount, and the winner's address
+---
 ## Testing the contract
-- We are going to use remix IDE and metamask to deploy the contract to the Celo alfajores network
+- Finally we are done coding the contract
+- You can find the entire code of the contract here - 
+- Now we are going to use remix IDE and metamask to deploy the contract to the Celo alfajores network
+- I have made a simple video to show you guys the functionality
+- Maybe this could be optional
 ---
 # Conclusion
-- Congratulations! , you have learned another new implementation in the Web3 world
-- In this tutorial, we have learned a reliable way  to generate random numbers
+- Congratulations!, you have learned another new implementation in the Web3 world
+- In this tutorial, we have learned a reliable way  to generate random numbers and built a practical contract
 ---
 # What's next
 -  You can use this random number generator to make complex contracts for games
 - Explore other oracles and use randomness generator from them
 - You can learn more about oracles and access other data they provide
----
-# About the author
-Kishore
-- I'm also a Student learning web3 development every day
-- You can connect with me on Twitter - https://twitter.com/Kishorevb07
 ---
 # References
 - Witnet - https://witnet.io/
