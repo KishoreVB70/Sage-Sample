@@ -1,7 +1,7 @@
 # Introduction
 - Randomness is a core functionality for many applications
 - Games, trait-based NFTs, and luck-based financial applications rely heavily on randomness
-Welcome! In this tutorial, we are going to learn about random number generation and Working with it
+- Welcome! In this tutorial, we are going to learn about random number generation and Working with it
 ---
 # Pre requisites
 - To understand and utilize this tutorial you need to have the understanding of:
@@ -56,6 +56,38 @@ Welcome! In this tutorial, we are going to learn about random number generation 
 ## Using Randomness from witnet
 - Before starting to code our lottery contract, let's understand the randomness functions provided by Witnet
 - You can find the code and their explanation here - https://docs.witnet.io/smart-contracts/witnet-randomness-oracle/code-examples
+```
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "witnet-solidity-bridge/contracts/interfaces/IWitnetRandomness.sol";
+
+contract Witnet {
+
+    uint32 public randomness;
+    uint256 public latestRandomizingBlock;
+    IWitnetRandomness immutable public witnet;
+    
+    constructor (IWitnetRandomness _witnetRandomness) {
+        witnet = _witnetRandomness;
+    }
+
+    function requestRandomNumber() external payable {
+        latestRandomizingBlock = block.number;
+        uint _usedFunds = witnet.randomize{ value: msg.value }();
+        if (_usedFunds < msg.value) {
+            payable(msg.sender).transfer(msg.value - _usedFunds);
+        }
+    }
+    
+    function fetchRandomNumber() external {
+        assert(latestRandomizingBlock > 0);
+        randomness = witnet.random(type(uint32).max, 0, latestRandomizingBlock);
+    }
+
+    receive () external payable {} 
+}
+```
 - Firstly we import the interface of the witnessRandomness contract
 - The functionality is divided into two steps to be secure
 - There is a request function and a fetch function
