@@ -279,6 +279,7 @@ contract Lottery {
 - You can find the entire code of the contract here - 
 - Now we are going to use remix IDE and metamask to deploy the contract to the Celo alfajores network
 - I have made a simple video to show you guys the functionality
+[![Testing Video](https://i.postimg.cc/KvR33vRb/tutorial-image.jpg)](https://www.youtube.com/watch?v=yZJD51w_FQM "Testing Video")
 ---
 # Conclusion
 - Congratulations!, you have learned another new implementation in the Web3 world
