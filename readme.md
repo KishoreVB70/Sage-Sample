@@ -117,6 +117,7 @@ contract Witnet {
 	- Generate a Random number
 	- Fetch Random Number
 - Now as we have a rough idea about the functions, let's start the coding process
+---
 ```
 // SPDX-License-Identifier: MIT
 
@@ -131,6 +132,7 @@ contract Lottery {
 - As usual, we write the license and the pragma solidity version
 - We import the interface for the randomness contract
 - We set the address of the randomness contract in Celo alfajores and create the instance of the interface.
+---
 ```
     uint32 public randomness;
     uint256 entryAmount;
@@ -154,6 +156,7 @@ contract Lottery {
 	- Address of the last winner(for information)
 	- And finally an array of to track all the participants of the lottery
 - Finally, we have a bool which shows if there is a current active lottery
+---
 ```
     constructor () {
         owner = msg.sender;
@@ -181,6 +184,7 @@ contract Lottery {
 	- `Started` event logs the ID of the event and the amount
 	- `Ended` event logs the ID, the address of the winner, and the winner's amount
 - We have also defined the custom error `reEntry` for users who try to enter the lottery more than one time
+---
 ```
     function start(uint32 _entryAmount) external onlyOwner{
         //Check if there is a current active lottery
@@ -203,6 +207,7 @@ contract Lottery {
 	- Then we clear the array of players that is left from the previous round
 	- Then we update the `lotteryId`
 - We also emit the `Started` event with the Id and the amount
+---
 ```
     function join() external payable onlyIfOpen{
         require(msg.value == entryAmount, "Insufficient Funds");
@@ -222,6 +227,7 @@ contract Lottery {
 - We have employed a simple for loop which iterated over the `players` array and checks if the caller is already a part of it
 - If the caller is already in the array, then the function call is reverted by the custom error
 - If not, the player is added to the array
+---
 ```
     function requestRandomness() external onlyOwner onlyIfOpen{
         latestRandomizingBlock = block.number;
@@ -236,6 +242,7 @@ contract Lottery {
 - Then we have a fee value which is set to 1 Celo(normal fee is very less than 1 celo)
 - This is not a problem as only the fee value will be deducted from the 1 celo
 - Finally, we call the randomize function in the randomness contract
+---
 ```
     function pickWinner() external onlyOwner onlyIfOpen{
         assert(latestRandomizingBlock > 0);
