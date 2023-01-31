@@ -22,6 +22,4 @@ contract Witnet {
         assert(latestRandomizingBlock > 0);
         randomness = witnet.random(type(uint32).max, 0, latestRandomizingBlock);
     }
-
-    receive () external payable {} 
 }
