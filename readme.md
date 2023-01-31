@@ -6,11 +6,10 @@
 # Pre requisites
 - To understand and utilize this tutorial you need to have the understanding of:
 	- Basic knowledge of developing smart contracts in Solidity
+	- Basic experience with Remix IDE 
 	- Working with Celo Alfajores testnet
-	- Basic experience using metamask and Remix IDE 
 ---
 # Requirements
-- Node Js
 - Metamask
 - Celo Alfajores testnet
 ---
@@ -99,13 +98,14 @@ contract Witnet {
 - After 5 - 10 minutes, we can call the fetch function to obtain the random number
 - This number is generated earlier and it is fetched into the contract whenever you call the fetch function
 ## Setup
-- Create a new directory in your favorite code editor, name it Lottery
-- Firstly we need to download the npm package of witnet to access the interface of the randomness contract
-- Download it through this command
-	- `npm I witnet-solidity-bridge`
-- Now create a new solidity file called Lottery.sol
+- To make this tutorial as simple as possible, we are going to use only remix to write and test the contract
+- You can also use local development by using your favorite code editor
+- You can Download the package for the interface of randomness contract thorugh this command:
+    npm I witnet-solidity-bridge
+- For the rest of us, we are going to use remix IDE
+- Open up remix IDE and create a new file -> Lottery.sol
 ## Building the contract
-- If you're curious, the entire code for the contract can be viewed in - 
+- If you're curious, the entire code for the contract can be viewed by [CLICKING HERE](https://github.com/KishoreVB70/Lottery-Tutorial/blob/main/Lottery.sol)
 - Before starting to code a project, we must have an outline of all the functionality that will be in the contract
 - This contract will behave like a traditional lottery where there is an owner who will start and end the lottery
 - There will be people who will join the lottery by paying the lottery amount
@@ -134,7 +134,6 @@ contract Lottery {
 - We set the address of the randomness contract in Celo alfajores and create the instance of the interface.
 ---
 ```
-    uint32 public randomness;
     uint256 entryAmount;
     uint256 lastWinnerAmount;
     uint256 public lotteryId;
@@ -147,8 +146,7 @@ contract Lottery {
     bool open;
 ```
 - Let's look at all the variables we will be going through
-- Firstly we have the random number itself, it is in uint32 because the randomness contract returns us a uint32
-- Then we have the `entryAmount` so that the players can know the amount
+- Firstly we have the `entryAmount` so that the players can know the amount
 - To give more information we have the last winner amount and the lottery Id
 - We have the `latestRandomizingBlock` which is the block where we called the randomness function
 - Coming to the address, we have:
@@ -283,7 +281,7 @@ contract Lottery {
 ---
 ## Testing the contract
 - Finally we are done coding the contract
-- You can find the entire code of the contract here - 
+- You can find the entire code of the contract by [CLICKING HERE](https://github.com/KishoreVB70/Lottery-Tutorial/blob/main/Lottery.sol)
 - Now we are going to use remix IDE and metamask to deploy the contract to the Celo alfajores network
 - I have made a simple video to show you guys the functionality
 [![Testing Video](https://i.postimg.cc/ZYFzPrvF/tutorial-yt.jpg)](https://www.youtube.com/watch?v=DPsizPEkZZk "Testing Video")
